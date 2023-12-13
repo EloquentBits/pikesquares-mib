@@ -64,6 +64,7 @@ WILDCARD_CERT="${CAROOT}/pikesquares.dev.pem"
 WILDCARD_CERT_KEY="${CAROOT}/pikesquares.dev-key.pem"
 if [[ ! -f "${WILDCARD_CERT_KEY}" || ! -f "${WILDCARD_CERT}" ]]; then 
   echo "Generating CA and self-signed wildcard cert."
+  chmod a+x "${APP_BINARY_PATH}"
   SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -key-file "${WILDCARD_CERT_KEY}" -cert-file "${WILDCARD_CERT}" \
       "*.pikesquares.dev" localhost 127.0.0.1
   SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -install
