@@ -3,6 +3,7 @@ import logging
 import json
 import tomllib
 import shutil
+import sys
 import xml.etree.ElementTree as ET
 
 from argparse import ArgumentParser
@@ -72,7 +73,6 @@ def load_config(config_path="mib.json"):
         elif config_path.suffix == ".toml":
             return tomllib.load(file)
         else:
-            import sys
             sys.stderr.write("This config is not supported! (only json, toml files are supported)\n")
             exit(1)
 
@@ -115,6 +115,10 @@ def build_dir_path(path):
 def main():
     args = parse_args()
     config = load_config(config_path=Path(args.config))
+
+    if sys.platform != "darwin":
+        sys.stderr.write("Sorry, Mac OS Installer Builder is available only on Mac OS system!\n")
+        exit(1)
 
     product_config = config.get("product", {})
     product_identifier = product_config.get("identifier")
