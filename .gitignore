@@ -3,3 +3,4 @@
 _files/binary/pike-squares-*-*
 __pycache__
 .venv
+build
