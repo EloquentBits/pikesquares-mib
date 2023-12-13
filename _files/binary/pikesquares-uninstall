@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+APP_NAME="pikesquares"
+LOG_FILE_PATH="$HOME/Library/Logs/$APP_NAME-script-uninstall.log"
+
+if [ "$(whoami)" != "root" ]; then
+    echo "You must be root to do this"
+    # sudo -u root "$0"
+    exit
+fi
+
+exec &> >(tee "$LOG_FILE_PATH")
+# Everything below will go to the console output and file 'pikesquares-uninstall-log.out':
+echo "[$(whoami)] Logging ${APP_NAME}-uninstall script to $LOG_FILE_PATH @ $(date +%c)"
+
+DAEMON_ID="com.eloquentbits.${APP_NAME}"
+SYSTEM_APP_DIR="/Library/Application Support/${APP_NAME}"
+SYSTEM_DAEMON_PATH="/Library/LaunchDaemons/${DAEMON_ID}.plist"
+USER_APP_DIR="${HOME}${SYSTEM_APP_DIR}"
+USER_DAEMON_PATH="${HOME}/Library/LaunchAgents/${DAEMON_ID}.plist"
+DOMAIN="system"
+
+IS_DAEMON_RUNNING=$(sudo launchctl blame $DOMAIN/$DAEMON_ID)
+
+# Disabling daemon
+echo "Stopping and removing daemon ${DAEMON_ID}"
+if [[ "$IS_DAEMON_RUNNING" != "(not running)" && "$?" -eq "0" ]]; then
+  sudo /bin/launchctl stop $DOMAIN/$DAEMON_ID
+  sudo /bin/launchctl stop $DAEMON_ID
+fi
+sudo /bin/launchctl disable $DOMAIN/$DAEMON_ID
+sudo /bin/launchctl disable $DAEMON_ID
+sudo /bin/launchctl unload -w $SYSTEM_DAEMON_PATH
+sudo /bin/launchctl unload -w $USER_DAEMON_PATH
+
+# Cleanup daemon plist
+echo "Removing daemon from system"
+sudo rm -f $SYSTEM_DAEMON_PATH
+sudo rm -f $USER_DAEMON_PATH
+
+echo "Removing from package database"
+pkgs=$(sudo /usr/sbin/pkgutil --pkgs | grep $DAEMON_ID)
+for pkg in $pkgs
+do
+sudo /usr/sbin/pkgutil --forget $pkg
+done
+
+echo "Removing app ssl certificates and CA"
+MKCERT_PATH="/usr/local/bin/mkcert"
+CAROOT="${USER_APP_DIR}/ssl"
+WILDCARD_CERT="${CAROOT}/pikesquares.dev.pem"
+WILDCARD_CERT_KEY="${CAROOT}/pikesquares.dev-key.pem"
+if [[ -f "${WILDCARD_CERT_KEY}" || -f "${WILDCARD_CERT}" ]]; then
+  echo "[1/2] Uninstalling CA"
+  ${MKCERT_PATH} -uninstall
+  echo "[2/2] Removing certificates"
+  rm -f "$WILDCARD_CERT" "$WILDCARD_CERT_KEY"
+  rmdir "$CAROOT"
+fi
+
+# Suggest to clear application directory? Probably, yes.
+echo "Removing application data @ $USER_APP_DIR"
+rm -rf "$USER_APP_DIR"
+
+echo "Removing CLI binary"
+sudo rm -f /usr/local/bin/pikesquares
+
+echo "PikeSquares successfully uninstalled, bye"
+sudo rm "$0"
+exit 0

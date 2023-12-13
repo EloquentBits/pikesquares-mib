@@ -1,0 +1,37 @@
+[product]
+name = "PikeSquares"
+version = "0.3.37"
+identifier = "com.eloquentbits.pikesquares"
+copyright = "Copyright © 2023 Eloquent Bits Inc. All rights reserved"
+
+[[product.links]]
+name = "PikeSquares Cloud"
+url = "https://pikesquares.com"
+
+[[product.links]]
+name = "PikeSquares Docs"
+url = "https://docs.pikesquares.com"
+
+[product.commands]
+run = "sudo launchctl start com.eloquentbits.pikesquares"
+uninstall = "sudo /usr/local/bin/pikesquares-uninstall"
+
+[product.installer]
+file-name = "pikesquares-installer"
+check-after-build = true
+resources-dir = "_files/Resources/en.lproj"
+
+[product.installer.distribution]
+title = "PikeSquares Installer"
+options = { customize = "never", allow-external-scripts = "no" }
+domains = { enable_localSystem = "true" }
+background = { mime-type = "image/png", file="banner.png", scaling = "proportional" }
+welcome = { file = "welcome.html", mime-type = "text/html" }
+conclusion = { file = "conclusion.html", mime-type = "text/html" }
+license = { file = "LICENSE.txt" }
+
+[[product.installer.files]]
+name = "binary"
+root = "_files/binary"
+install-location = "/usr/local/bin"
+scripts-dir = "_files/scripts"

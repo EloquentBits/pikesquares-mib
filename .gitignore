@@ -1,0 +1,5 @@
+.DS_Store
+*.pkg
+_files/binary/pike-squares-*-*
+__pycache__
+.venv

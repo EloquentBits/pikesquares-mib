@@ -1,0 +1,36 @@
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+    </head>
+    <body>
+        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
+            <h3>{{ product.name }}</h3>
+                <p style="color: #020202; font-size: 14px;">Thank you for installing {{ product.name }}.</p>
+            <h5>Run {{ product.name }}</h5>
+                <p style="color: #020202; font-size: 14px;">Open a new terminal and run the following command to start {{ product.name }}:</p>
+                <code style="color: #c6a72b; font-size: 12px;">&nbsp; $ <span style="color: #abb0b0">{{ product.commands.run }}</span></code>
+        </div>
+        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
+            <br/>
+            <h5>Resources</h5>
+                <p style="color: #020202; font-size: 14px;">Go through following links for additional information.</p>
+                <ul>
+                    {% for link in product.links %}
+                    <li><a href="{{ link.url }}" style="font-size: 14px;">{{ link.name }}</a></li>
+                    {% endfor %}
+                </ul>
+        </div>
+        <div style="font-family: Helvetica; padding-left: 10px;" align="left">
+            <br/>
+            <h5>Uninstall {{ product.name }}</h5>
+                <p style="color: #020202; font-size: 14px;">Run the following command to uninstall {{ product.name }}. <br />
+                  <code style="color: #c6a72b; font-size: 14px;"><br />&nbsp; $ <span style="color: #abb0b0">{{ product.commands.uninstall }}</span></code>
+                </p>
+        </div>
+        <div style="font-family: Helvetica; padding-left: 10px;" align="left"><br />
+            <p style="color: #abb0b0; font-size: 12px;">{{ product.copyright }}</p>
+        </div>
+    </body>
+</html>
