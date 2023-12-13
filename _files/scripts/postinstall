@@ -6,6 +6,87 @@ set -euxo pipefail
 #     su -c "$0 $*"
 #     exit
 # fi
+generate_ca_certs() {
+  echo "generating CA certs"
+
+  #CA_EXPIRE_DAYS
+  #CA_C=
+  #CA_L=
+  #CA_OU=
+  #CA_CN=
+
+  CA_SUBJ="/C=${CA_C:-"US"}/L=${CA_L:-"New York"}/O=${CA_O:-"Eloquent Bits Inc."}/OU=${CA_OU:-"Pike Squares App"}/CN=${CA_CN:-"Pike Squares App"}"
+
+  umask 377
+  openssl rand -base64 32 > "${CAROOT}/ca.pass"
+
+  # ca.key / ca.crt
+  openssl req \
+      -new -x509 -days "${CA_EXPIRE_DAYS:-365}" \
+      -newkey rsa:4096 -keyout "${CAROOT}/ca.key" -passout file:"${CAROOT}/ca.pass" \
+      -out "${CAROOT}/ca.crt" -subj "$CA_SUBJ"
+
+  umask 022
+
+  chmod 400 "${CAROOT}/ca.key"
+  chmod 444 "${CAROOT}/ca.crt"
+  GROUP=$(id -g $SERVER_USER)
+  chown "$SERVER_USER":"${GROUP}" "${CAROOT}/ca.crt"
+
+  echo
+  echo "The Certificate Authority files have been generated :"
+  echo " - key :         '${CAROOT}/ca.key'"
+  echo " - certificate : '${CAROOT}/ca.crt' (self-signed) "
+
+}
+
+generate_server_certs() {
+  echo "generating server certs"
+
+  NO_PASSWD=${NO_PASSWD:-true}
+  CRT_CN="PikeSquaresHTTPSRouter"
+
+  # default value should be override
+  CRT_SUBJ="/C=${CRT_C:-"US"}/L=${CRT_L:-"New York"}/O=${CRT_O:-"Eloquent Bits Inc."}/OU=${CRT_OU:-"Pike Squares App"}/CN=${CRT_CN:="default"}"
+  CRT_CN="$(echo $CRT_SUBJ | sed -e 's,.*CN=\([^/]*\).*,\1,')"
+
+  echo "CRT_SUBJ: ${CRT_SUBJ}"
+  echo "CRT_CN: ${CRT_CN}"
+
+  CRT_SAN="DNS:*.pikesquares.dev,IP:127.0.0.1,DNS:localhost"
+  EXTFILE_CONTENT="\\nsubjectAltName = ${CRT_SAN}"
+
+  CRT_UID="serverCertificate_$( date +%Y%m%d_%H%M%S )_$( echo ${CRT_CN} | tr -dc A-Za-z0-9 )"
+  PASSWD_STRING="$( $NO_PASSWD && echo "-nodes" || echo "-passout file:${CAROOT}/${CRT_UID}.key.pass" )"
+  echo ${PASSWD_STRING}
+
+  umask 377
+  openssl rand -base64 32 > ${CAROOT}/"${CRT_UID}".key.pass
+
+  cat ${CAROOT}/"${CRT_UID}".key.pass
+
+  # .key / .csr
+  openssl req \
+      -new \
+      -newkey rsa:4096 \
+      -keyout ${CAROOT}/"${CRT_UID}".key "${PASSWD_STRING}" \
+      -out ${CAROOT}/${CRT_UID}.csr \
+      -subj "${CRT_SUBJ}"
+
+  # .crt
+  openssl x509 -req -days ${CRT_EXPIRE_DAYS:-"365"} -sha256 \
+    -in ${CAROOT}/${CRT_UID}.csr \
+    -passin file:${CAROOT}/ca.pass \
+    -CA ${CAROOT}/ca.crt \
+    -CAkey ${CAROOT}/ca.key \
+    -CAserial ${CAROOT}/ca.srl \
+    -CAcreateserial \
+    -out ${CAROOT}/"${CRT_UID}".crt -extfile <(echo -e "$EXTFILE_CONTENT")
+
+  chmod 600 ${CAROOT}/ca.srl
+  chmod 444 ${CAROOT}/"${CRT_UID}".csr ${CAROOT}/"${CRT_UID}".crt
+
+}
 
 APP_NAME="pikesquares"
 APP_BINARY_PATH="/usr/local/bin/$APP_NAME"
@@ -64,10 +145,11 @@ WILDCARD_CERT="${CAROOT}/pikesquares.dev.pem"
 WILDCARD_CERT_KEY="${CAROOT}/pikesquares.dev-key.pem"
 if [[ ! -f "${WILDCARD_CERT_KEY}" || ! -f "${WILDCARD_CERT}" ]]; then 
   echo "Generating CA and self-signed wildcard cert."
-  chmod a+x "${APP_BINARY_PATH}"
-  SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -key-file "${WILDCARD_CERT_KEY}" -cert-file "${WILDCARD_CERT}" \
-      "*.pikesquares.dev" localhost 127.0.0.1
-  SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -install
+  generate_ca_certs
+  generate_server_certs
+#   SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -key-file "${WILDCARD_CERT_KEY}" -cert-file "${WILDCARD_CERT}" \
+#       "*.pikesquares.dev" localhost 127.0.0.1
+#   SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -install
 fi
 
 # Creating daemon plist
@@ -113,6 +195,6 @@ sudo /bin/launchctl load -w $USER_DAEMON_PATH
 # Chown app dir to user to prevent permission denied error
 chown -R $USER: "$USER_APP_DIR"
 
-sudo chmod +x /usr/local/bin/pikesquares-uninstall
+sudo chmod +x /usr/local/bin/pikesquares /usr/local/bin/pikesquares-uninstall
 
 exit 0
