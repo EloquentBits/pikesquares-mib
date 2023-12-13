@@ -11,25 +11,25 @@ APP_NAME="pikesquares"
 APP_BINARY_PATH="/usr/local/bin/$APP_NAME"
 SERVER_USER="$USER"
 USER_HOME="$HOME"
-if [ "$USER" = "root" ]; then
-	echo "Seems like running from root, creating dedicated user"
-	SERVER_USER="pikesquares"
-	local max_id=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
-    local new_id=$((max_id+1))
+# if [ "$USER" = "root" ]; then
+# 	echo "Seems like running from root, creating dedicated user"
+# 	SERVER_USER="pikesquares"
+# 	local max_id=$(dscl . -list /Users UniqueID | awk 'BEGIN { max = 500; } { if ($2 > max) max = $2; } END { print max + 1; }')
+#     local new_id=$((max_id+1))
 
-    # Creating group for user (groupadd)
-    dscl . -create "/Groups/$SERVER_USER"
-    dscl . -create "/Groups/$SERVER_USER" gid "$new_id"
+#     # Creating group for user (groupadd)
+#     dscl . -create "/Groups/$SERVER_USER"
+#     dscl . -create "/Groups/$SERVER_USER" gid "$new_id"
 
-    # Creating user itself (useradd)
-    dscl . -create "/Users/$SERVER_USER"
-    dscl . -create "/Users/$SERVER_USER" UserShell /bin/bash
-    dscl . -create "/Users/$SERVER_USER" UniqueID "$new_id"
-    dscl . -create "/Users/$SERVER_USER" PrimaryGroupID "20"
-    # Promote user to admin if need
-    # dscl . -append /Groups/admin GroupMembership "$SERVER_USER"
-	USER_HOME="/Users/$SERVER_USER"
-fi
+#     # Creating user itself (useradd)
+#     dscl . -create "/Users/$SERVER_USER"
+#     dscl . -create "/Users/$SERVER_USER" UserShell /bin/bash
+#     dscl . -create "/Users/$SERVER_USER" UniqueID "$new_id"
+#     dscl . -create "/Users/$SERVER_USER" PrimaryGroupID "20"
+#     # Promote user to admin if need
+#     # dscl . -append /Groups/admin GroupMembership "$SERVER_USER"
+# 	USER_HOME="/Users/$SERVER_USER"
+# fi
 
 LOG_DIR="$USER_HOME/Library/Logs/$APP_NAME"
 [[ -d "$LOG_DIR" ]] || mkdir -p "$LOG_DIR"
@@ -48,6 +48,10 @@ SYSTEM_DAEMON_PATH="/Library/LaunchDaemons/${DAEMON_ID}.plist"
 USER_APP_DIR="${USER_HOME}${SYSTEM_APP_DIR}"
 USER_DAEMON_PATH="${USER_HOME}/Library/LaunchAgents/${DAEMON_ID}.plist"
 DOMAIN="system"
+if [ "$USER" = "root" ]; then
+	USER_APP_DIR="$SYSTEM_APP_DIR"
+	USER_DAEMON_PATH="$SYSTEM_DAEMON_PATH"
+fi
 
 SYSTEM_PYTHON_PATH=$(which python3)
 SYSTEM_PYTHON_BIN_DIR=$(dirname $SYSTEM_PYTHON_PATH)
