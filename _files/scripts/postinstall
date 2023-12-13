@@ -75,15 +75,15 @@ generate_server_certs() {
 
   # .crt
   openssl x509 -req -days ${CRT_EXPIRE_DAYS:-"365"} -sha256 \
-    -in ${CAROOT}/${CRT_UID}.csr \
-    -passin file:${CAROOT}/ca.pass \
-    -CA ${CAROOT}/ca.crt \
-    -CAkey ${CAROOT}/ca.key \
-    -CAserial ${CAROOT}/ca.srl \
+    -in "${CAROOT}/${CRT_UID}.csr" \
+    -passin "file:${CAROOT}/ca.pass" \
+    -CA "${CAROOT}/ca.crt" \
+    -CAkey "${CAROOT}/ca.key" \
+    -CAserial "${CAROOT}/ca.srl" \
     -CAcreateserial \
     -out "${CAROOT}/${CRT_UID}.crt" -extfile <(echo -e "$EXTFILE_CONTENT")
 
-  chmod 600 ${CAROOT}/ca.srl
+  chmod 600 "${CAROOT}/ca.srl"
   chmod 444 "${CAROOT}/${CRT_UID}.csr" "${CAROOT}/${CRT_UID}.crt"
 
 }
