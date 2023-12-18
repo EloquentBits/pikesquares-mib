@@ -3,10 +3,11 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+import sys
 
 logger = logging.getLogger(__file__)
-# logger.setLevel(logging.DEBUG)
-# logger.addHandler(logging.StreamHandler(stream=sys.stdout))
+logger.setLevel(logging.DEBUG)
+logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logging.basicConfig(
     format="(%(module)s) %(asctime)s [%(levelname)s] %(message)s"
 )
@@ -66,12 +67,17 @@ def cmd_exec(*args, **kwargs):
     stderr = kwargs.pop('stderr', subprocess.PIPE)
     stdin = ''
     executable = kwargs.pop('executable', None)
+    strict_flags_after_args = kwargs.pop('strict_flags_after_args', False)
     as_superuser = kwargs.pop('as_superuser', False)
+    as_superuser_gui = kwargs.pop('as_superuser_gui', False)
     flag_format = kwargs.pop('flag_format', "--{flag}")
     params = []
-    if as_superuser:
+    # os.system("""osascript -e 'do shell script "<commands go here>" " with administrator privileges'""")
+    if as_superuser and not as_superuser_gui:
         params.append("sudo")
     params.append(executable)
+    if strict_flags_after_args:
+        params += args
     for arg_key, arg_value in kwargs.items():
         arg = flag_format.format(flag=arg_key).replace('_', '-')
         if isinstance(arg_value, Path):
@@ -86,7 +92,18 @@ def cmd_exec(*args, **kwargs):
         elif " " in arg_value:
             arg_value = f'"{arg_value}"'
         params.extend([arg, arg_value])
-    params += args
+    if not strict_flags_after_args:
+        params += args
+    if as_superuser_gui and os.getuid() != 0:
+        print(f"{os.getuid()=} {os.geteuid()=}")
+        shell_script = " ".join([str(p) for p in params if p])
+        import getpass
+        current_user = getpass.getuser()
+        params = (
+            '/usr/bin/osascript',
+            '-e',
+            f'do shell script "su -l root -c \'{shell_script}\'" with administrator privileges'
+        )
     return _cmd_exec(
         command=[
             p 
@@ -129,9 +146,18 @@ def productbuild(*args, **kwargs):
     )
 
 
+def dscl(*args, **kwargs):
+    return cmd_exec(
+        ".",
+        **kwargs,
+        strict_flags_after_args=True,
+        executable="/usr/bin/dscl",
+        flag_format="-{flag}",
+    )
+
 def pkgutil(*args, **kwargs):
     return cmd_exec(
-        executable="/usr/bin/pkgutil",
+        executable="/usr/sbin/pkgutil",
         *args,
         **kwargs
     )
@@ -140,6 +166,14 @@ def pkgutil(*args, **kwargs):
 def productsign(*args, **kwargs):
     return cmd_exec(
         executable="/usr/bin/productsign",
+        *args,
+        **kwargs
+    )
+
+def launchctl(*args, **kwargs):
+    return cmd_exec(
+        executable="/bin/launchctl",
+        as_superuser=True,
         *args,
         **kwargs
     )
