@@ -154,6 +154,9 @@ if [[ ! -f "${WILDCARD_CERT_KEY}" || ! -f "${WILDCARD_CERT}" ]]; then
 #   SCIE_BOOT="generate-certs" ${APP_BINARY_PATH} -install
 fi
 
+# To patch PATH we need to call one of commands
+$APP_BINARY_PATH status
+
 # Creating daemon plist
 cat > "$USER_DAEMON_PATH" << __EOF__
 <?xml version="1.0" encoding="UTF-8"?>

@@ -61,6 +61,9 @@ fi
 echo "Removing application data @ $USER_APP_DIR"
 rm -rf "$USER_APP_DIR"
 
+echo "Removing PikeSquares runtime from PATH and restoring PATH to initial state"
+[[ -f /etc/paths.d/50-pikesquares ]] && sudo rm -f /etc/paths.d/50-pikesquares
+eval "$(/usr/libexec/path_helper -s)"
 
 echo "Removing CLI binary"
 sudo rm -f /usr/local/bin/pikesquares

@@ -104,6 +104,21 @@ class UninstallerWorker(QObject):
                         as_superuser_gui=True,
                         gui_prompt=gui_prompt
                     )
+        
+        with self.step("Removing Pikesquares runtime from PATH and restoring PATH to initial state"):
+            import os
+            path_vars_file = Path(f"/etc/path.d/50-pikesquares")
+            if path_vars_file.exists() and path_vars_file.is_file():
+                res = cmd_exec(
+                    "rm",
+                    "-f",
+                    "/etc/paths.d/50-pikesquares",
+                    as_superuser_gui=True,
+                    gui_prompt=gui_prompt
+                )
+                if res.error:
+                    raise StepFailedError(res.stderr)
+                os.system("eval $(/usr/libexec/path_helper -s)")
 
         # Remove app data dir
         with self.step("Remove application data (certificates, configs and so on)"):
