@@ -49,6 +49,9 @@ class UninstallerWorker(QObject):
             Path(f'/opt/{app_name}'),
             Path.home() / Path(f"Library/Application Support/{app_name}")
         )
+        gui_prompt = "{app_name} Uninstaller".format(
+            app_name=self.product.get('name')
+        )
 
         with self.step("Stopping and unloading daemon from launchd"):
             # Stopping and unloading daemon from launchd
@@ -58,7 +61,11 @@ class UninstallerWorker(QObject):
                 daemon_path = Path.home() / user_daemon_path
             if not daemon_path.exists():
                 daemon_path = Path("/Users/pikesquares") / user_daemon_path
-                unload_result = launchctl("unload", str(daemon_path.resolve()), as_superuser_gui=True)
+                unload_result = launchctl(
+                    "unload", str(daemon_path.resolve()), 
+                    as_superuser_gui=True,
+                    gui_prompt=gui_prompt
+                )
                 if unload_result.error:
                     raise StepFailedError(unload_result.stderr)
             else:
@@ -69,17 +76,19 @@ class UninstallerWorker(QObject):
                 "rm",
                 "-f",
                 daemon_path,
-                as_superuser_gui=True
+                as_superuser_gui=True,
+                gui_prompt=gui_prompt
             )
 
         # Forget package from package db
         with self.step("Forget package from package db"):
-            packages = pkgutil(pkgs=True, as_superuser_gui=True)
+            packages = pkgutil(pkgs=True, as_superuser_gui=True,
+                               gui_prompt=gui_prompt)
             if packages.success:
                 for pkg in packages.stdout.splitlines():
                     if daemon_id not in pkg:
                         continue
-                    res = pkgutil(forget=pkg, as_superuser_gui=True)
+                    res = pkgutil(forget=pkg, as_superuser_gui=True, gui_prompt=gui_prompt)
                     if res.error:
                         raise StepFailedError(res.stderr)
         
@@ -92,7 +101,8 @@ class UninstallerWorker(QObject):
                 if "pikesquares" in user:
                     dscl(
                         delete=f"/Users/{user}",
-                        as_superuser_gui=True
+                        as_superuser_gui=True,
+                        gui_prompt=gui_prompt
                     )
 
         # Remove app data dir
@@ -103,7 +113,8 @@ class UninstallerWorker(QObject):
                         "rm",
                         "-rf",
                         dir_,
-                        as_superuser_gui=True
+                        as_superuser_gui=True,
+                        gui_prompt=gui_prompt
                     )
 
         self.finished.emit()

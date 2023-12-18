@@ -70,6 +70,7 @@ def cmd_exec(*args, **kwargs):
     strict_flags_after_args = kwargs.pop('strict_flags_after_args', False)
     as_superuser = kwargs.pop('as_superuser', False)
     as_superuser_gui = kwargs.pop('as_superuser_gui', False)
+    superuser_gui_prompt = kwargs.pop("gui_prompt", "osascript")
     flag_format = kwargs.pop('flag_format', "--{flag}")
     params = []
     # os.system("""osascript -e 'do shell script "<commands go here>" " with administrator privileges'""")
@@ -97,12 +98,10 @@ def cmd_exec(*args, **kwargs):
     if as_superuser_gui and os.getuid() != 0:
         print(f"{os.getuid()=} {os.geteuid()=}")
         shell_script = " ".join([str(p) for p in params if p])
-        import getpass
-        current_user = getpass.getuser()
         params = (
             '/usr/bin/osascript',
             '-e',
-            f'do shell script "su -l root -c \'{shell_script}\'" with administrator privileges'
+            f'do shell script "su -l root -c \'{shell_script}\'" with prompt "{superuser_gui_prompt}" with administrator privileges'
         )
     return _cmd_exec(
         command=[
