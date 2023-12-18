@@ -31,8 +31,6 @@ if [[ "$IS_DAEMON_RUNNING" != "(not running)" && "$?" -eq "0" ]]; then
 fi
 sudo /bin/launchctl disable $DOMAIN/$DAEMON_ID
 sudo /bin/launchctl disable $DAEMON_ID
-sudo /bin/launchctl unload -w $SYSTEM_DAEMON_PATH
-sudo /bin/launchctl unload -w $USER_DAEMON_PATH
 
 # Cleanup daemon plist
 echo "Removing daemon from system"
@@ -63,8 +61,12 @@ fi
 echo "Removing application data @ $USER_APP_DIR"
 rm -rf "$USER_APP_DIR"
 
+
 echo "Removing CLI binary"
 sudo rm -f /usr/local/bin/pikesquares
+
+echo "Removing pikesquares user"
+sudo dscl . -delete /Users/pikesquares
 
 echo "PikeSquares successfully uninstalled, bye"
 sudo rm "$0"
