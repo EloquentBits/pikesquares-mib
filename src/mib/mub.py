@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6 import QtWidgets
 from PySide6.QtCore import QObject, Signal
 
-from utils import cmd_exec, dscl, launchctl, pkgutil
+from mib.utils import cmd_exec, dscl, launchctl, pkgutil
 
 
 class StepFailedError(Exception):
@@ -284,7 +284,9 @@ def load_config(config_path="mib.toml"):
 
 def main():
     app = QtWidgets.QApplication(sys.argv)
-    wizard = UninstallWizard(config=load_config())
+    wizard = UninstallWizard(
+        config={'product': {'name': "PikeSquares", 'identifier': "com.eloquentbits.pikesquares"}}
+    )
     wizard.show()
     # wizard.button(QtWidgets.QWizard.WizardButton.NextButton).setEnabled(False)
     sys.exit(app.exec())

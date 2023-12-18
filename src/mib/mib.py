@@ -9,7 +9,7 @@ import xml.etree.ElementTree as ET
 from argparse import ArgumentParser
 from pathlib import Path
 
-from utils import pkgbuild, productbuild, working_directory, installer
+from mib.utils import pkgbuild, productbuild, working_directory, installer
 
 logger = logging.getLogger(__file__)
 # logger.setLevel(logging.ERROR)
