@@ -3,6 +3,7 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from contextlib import contextmanager
 import sys
 
 logger = logging.getLogger(__file__)
@@ -11,8 +12,6 @@ logger.addHandler(logging.StreamHandler(stream=sys.stdout))
 logging.basicConfig(
     format="(%(module)s) %(asctime)s [%(levelname)s] %(message)s"
 )
-
-from contextlib import contextmanager
 
 @contextmanager
 def working_directory(path, cwd=Path.cwd()):
@@ -114,6 +113,24 @@ def cmd_exec(*args, **kwargs):
         stdin=stdin
     )
 
+@contextmanager
+def superuser_cmd_context(file_name="uninstaller_tmp", gui_prompt="pikesquares sudoers change"):
+    uninstaller_sudoers_path = f"/etc/sudoers.d/{file_name}"
+    from getpass import getuser
+    cmd_exec(
+        'cat > {path} << __EOF__\n{user} ALL=(ALL) NOPASSWD: ALL\n__EOF__'.format(
+            path=file_name,
+            user=getuser()
+        ),
+        # "&&",
+        # "visudo",
+        # "-f", f"{uninstaller_sudoers_path}",
+        as_superuser_gui=True,
+        gui_prompt=gui_prompt
+    )
+    # cmd_exec("visudo", "-f", f"{uninstaller_sudoers_path}", as_superuser=True)
+    yield
+    cmd_exec(f"rm", "-f", f"{uninstaller_sudoers_path}", as_superuser=True)
 
 def pkgbuild(*args, **kwargs):
     return cmd_exec(
@@ -172,7 +189,7 @@ def productsign(*args, **kwargs):
 def launchctl(*args, **kwargs):
     return cmd_exec(
         executable="/bin/launchctl",
-        as_superuser=True,
+        # as_superuser=True,
         *args,
         **kwargs
     )
